@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'pharmacy_wrapper_page.dart';
 
-// ============================================================
-// InventoryListPage — standalone inventory browser
-// ============================================================
 class InventoryListPage extends StatefulWidget {
   const InventoryListPage({super.key});
 
@@ -96,7 +93,7 @@ class _InventoryListPageState extends State<InventoryListPage> {
             ),
           ),
           Positioned.fill(
-            child: Container(color: Colors.black.withValues(alpha: 0.50)),
+            child: Container(color: Color.fromRGBO(0, 0, 0, 0.50)),
           ),
           SafeArea(
             child: Column(
@@ -144,7 +141,7 @@ class _InventoryListPageState extends State<InventoryListPage> {
                       hintText: 'Search by name, generic name, batch...',
                       hintStyle: const TextStyle(color: Colors.white38),
                       filled: true,
-                      fillColor: Colors.white.withValues(alpha: 0.08),
+                      fillColor: Color.fromRGBO(255, 255, 255, 0.08),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide.none,
@@ -203,12 +200,16 @@ class _InventoryListPageState extends State<InventoryListPage> {
                                 m['cartons']?['manufacturers']?['name']
                                     ?.toString() ??
                                 'Unknown';
+                            final String shelfNum =
+                                m['shelf_number']?.toString() ?? '';
+                            final String shelfSide =
+                                m['shelf_side']?.toString() ?? '';
 
                             return Container(
                               margin: const EdgeInsets.only(bottom: 10),
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.10),
+                                color: Color.fromRGBO(255, 255, 255, 0.10),
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: expColor.withValues(alpha: 0.4),
@@ -258,22 +259,34 @@ class _InventoryListPageState extends State<InventoryListPage> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: qty > 0
-                                              ? Colors.greenAccent.withValues(
-                                                  alpha: 0.15,
+                                              ? Color.fromRGBO(
+                                                  105,
+                                                  240,
+                                                  174,
+                                                  0.15,
                                                 )
-                                              : Colors.redAccent.withValues(
-                                                  alpha: 0.15,
+                                              : Color.fromRGBO(
+                                                  255,
+                                                  82,
+                                                  82,
+                                                  0.15,
                                                 ),
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
                                           border: Border.all(
                                             color: qty > 0
-                                                ? Colors.greenAccent.withValues(
-                                                    alpha: 0.5,
+                                                ? Color.fromRGBO(
+                                                    105,
+                                                    240,
+                                                    174,
+                                                    0.5,
                                                   )
-                                                : Colors.redAccent.withValues(
-                                                    alpha: 0.5,
+                                                : Color.fromRGBO(
+                                                    255,
+                                                    82,
+                                                    82,
+                                                    0.5,
                                                   ),
                                           ),
                                         ),
@@ -309,6 +322,16 @@ class _InventoryListPageState extends State<InventoryListPage> {
                                         '🔢 ${m['batch_number'] ?? 'N/A'}',
                                         Colors.white54,
                                       ),
+                                      if (shelfNum.isNotEmpty)
+                                        _chip(
+                                          '🗄️ Shelf $shelfNum',
+                                          Colors.purpleAccent,
+                                        ),
+                                      if (shelfSide.isNotEmpty)
+                                        _chip(
+                                          '◀ $shelfSide ▶',
+                                          Colors.cyanAccent,
+                                        ),
                                     ],
                                   ),
                                   const SizedBox(height: 8),
@@ -362,9 +385,6 @@ class _InventoryListPageState extends State<InventoryListPage> {
   }
 }
 
-// ============================================================
-// SellMedicineAndInventoryPage
-// ============================================================
 class SellMedicineAndInventoryPage extends StatefulWidget {
   final Map<String, dynamic>? preSelected;
   final bool openBarcode;
@@ -412,7 +432,8 @@ class _SellMedicineAndInventoryPageState
     'Custom',
   ];
 
-  // Substitute tab state
+  final List<String> _shelfSides = ['Left', 'Right', 'Middle', 'Top', 'Bottom'];
+
   final _substituteController = TextEditingController();
   List<Map<String, dynamic>> _substituteResults = [];
   bool _searchingSubstitute = false;
@@ -421,7 +442,7 @@ class _SellMedicineAndInventoryPageState
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() => setState(() {}));
     _loadMedicines();
     _loadManufacturers();
@@ -452,9 +473,6 @@ class _SellMedicineAndInventoryPageState
     super.dispose();
   }
 
-  // =========================
-  // LOAD MEDICINES
-  // =========================
   Future<void> _loadMedicines() async {
     setState(() => loadingMedicines = true);
     try {
@@ -474,9 +492,6 @@ class _SellMedicineAndInventoryPageState
     }
   }
 
-  // =========================
-  // LOAD MANUFACTURERS
-  // =========================
   Future<void> _loadManufacturers() async {
     setState(() => loadingManufacturers = true);
     try {
@@ -490,9 +505,6 @@ class _SellMedicineAndInventoryPageState
     }
   }
 
-  // =========================
-  // FILTER
-  // =========================
   void _filterMedicines() {
     final q = searchController.text.toLowerCase();
     setState(() {
@@ -511,9 +523,6 @@ class _SellMedicineAndInventoryPageState
     });
   }
 
-  // =========================
-  // SAFE LIMIT
-  // =========================
   int _getSafeLimit(String medicineName) {
     final name = medicineName.toLowerCase();
     for (final entry in _safeLimitsByKeyword.entries) {
@@ -522,9 +531,34 @@ class _SellMedicineAndInventoryPageState
     return _defaultSafeLimit;
   }
 
-  // =========================
-  // BARCODE SCAN
-  // =========================
+  bool _isExpired(String? expiryStr) {
+    if (expiryStr == null) return false;
+    final d = DateTime.tryParse(expiryStr);
+    if (d == null) return false;
+    return d.difference(DateTime.now()).inDays < 0;
+  }
+
+  Color _expiryColor(String? s) {
+    if (s == null) return Colors.grey;
+    final d = DateTime.tryParse(s);
+    if (d == null) return Colors.grey;
+    final days = d.difference(DateTime.now()).inDays;
+    if (days < 0) return Colors.redAccent;
+    if (days <= 30) return Colors.orange;
+    return Colors.greenAccent;
+  }
+
+  String _expiryLabel(String? s) {
+    if (s == null) return 'Expiry: N/A';
+    final d = DateTime.tryParse(s);
+    if (d == null) return 'Expiry: $s';
+    final days = d.difference(DateTime.now()).inDays;
+    if (days < 0) return '⛔ EXPIRED ($s)';
+    if (days == 0) return '⚠️ Expires TODAY';
+    if (days <= 30) return '⚠️ Expires in $days days ($s)';
+    return '✅ Expires: $s';
+  }
+
   Future<String?> _scanBarcode() async {
     final ctrl = TextEditingController();
     return showDialog<String>(
@@ -546,7 +580,7 @@ class _SellMedicineAndInventoryPageState
             hintText: 'Enter batch number / barcode',
             hintStyle: const TextStyle(color: Colors.white38),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.08),
+            fillColor: Color.fromRGBO(255, 255, 255, 0.08),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide.none,
@@ -572,10 +606,12 @@ class _SellMedicineAndInventoryPageState
     );
   }
 
-  // =========================
-  // SELL DIALOG
-  // =========================
   void _showSellDialog(Map<String, dynamic> medicine) {
+    if (_isExpired(medicine['expiry_date']?.toString())) {
+      _error('This medicine is expired and cannot be sold.');
+      return;
+    }
+
     String saleType = 'strip';
     final qtyCtrl = TextEditingController(text: '1');
     final customerCtrl = TextEditingController();
@@ -589,7 +625,6 @@ class _SellMedicineAndInventoryPageState
               (pricePerBox / stripsPerBox)
         : pricePerBox / stripsPerBox;
     final int availableBoxes = (medicine['quantity'] as int?) ?? 0;
-
     final int cartonNum = (medicine['cartons']?['carton_number'] as int?) ?? 1;
     final int boxesPerCarton =
         (medicine['cartons']?['boxes_per_carton'] as int?) ?? 50;
@@ -654,7 +689,7 @@ class _SellMedicineAndInventoryPageState
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.06),
+                      color: Color.fromRGBO(255, 255, 255, 0.06),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -724,7 +759,7 @@ class _SellMedicineAndInventoryPageState
                         hintText: 'Quantity',
                         hintStyle: const TextStyle(color: Colors.white38),
                         filled: true,
-                        fillColor: Colors.white.withValues(alpha: 0.08),
+                        fillColor: Color.fromRGBO(255, 255, 255, 0.08),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide.none,
@@ -744,7 +779,7 @@ class _SellMedicineAndInventoryPageState
                       hintText: 'Customer name (optional)',
                       hintStyle: const TextStyle(color: Colors.white38),
                       filled: true,
-                      fillColor: Colors.white.withValues(alpha: 0.08),
+                      fillColor: Color.fromRGBO(255, 255, 255, 0.08),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide.none,
@@ -764,7 +799,7 @@ class _SellMedicineAndInventoryPageState
                       hintText: 'Customer phone (optional)',
                       hintStyle: const TextStyle(color: Colors.white38),
                       filled: true,
-                      fillColor: Colors.white.withValues(alpha: 0.08),
+                      fillColor: Color.fromRGBO(255, 255, 255, 0.08),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide.none,
@@ -775,10 +810,10 @@ class _SellMedicineAndInventoryPageState
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.08),
+                      color: Color.fromRGBO(255, 152, 0, 0.08),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: Colors.orange.withValues(alpha: 0.3),
+                        color: Color.fromRGBO(255, 152, 0, 0.3),
                       ),
                     ),
                     child: Row(
@@ -805,10 +840,10 @@ class _SellMedicineAndInventoryPageState
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.blueAccent.withValues(alpha: 0.15),
+                      color: Color.fromRGBO(68, 138, 255, 0.15),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.blueAccent.withValues(alpha: 0.4),
+                        color: Color.fromRGBO(68, 138, 255, 0.4),
                       ),
                     ),
                     child: Row(
@@ -911,9 +946,6 @@ class _SellMedicineAndInventoryPageState
     );
   }
 
-  // =========================
-  // HIGH QTY WARNING + OTP
-  // =========================
   void _showHighQtyWarning({
     required Map<String, dynamic> medicine,
     required int qty,
@@ -961,11 +993,9 @@ class _SellMedicineAndInventoryPageState
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
+                  color: Color.fromRGBO(244, 67, 54, 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.redAccent.withValues(alpha: 0.4),
-                  ),
+                  border: Border.all(color: Color.fromRGBO(255, 82, 82, 0.4)),
                 ),
                 child: Text(
                   'You are selling $qty units of $medicineName.\n\nSafe limit is $safeLimit units.\n\nCustomer details required to proceed.',
@@ -1044,9 +1074,6 @@ class _SellMedicineAndInventoryPageState
     );
   }
 
-  // =========================
-  // OTP DIALOG
-  // =========================
   void _showOtpDialog({
     required Map<String, dynamic> medicine,
     required int qty,
@@ -1105,11 +1132,9 @@ class _SellMedicineAndInventoryPageState
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.blueAccent.withValues(alpha: 0.12),
+                  color: Color.fromRGBO(68, 138, 255, 0.12),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.blueAccent.withValues(alpha: 0.4),
-                  ),
+                  border: Border.all(color: Color.fromRGBO(68, 138, 255, 0.4)),
                 ),
                 child: Column(
                   children: [
@@ -1160,7 +1185,7 @@ class _SellMedicineAndInventoryPageState
                     fontSize: 14,
                   ),
                   filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.08),
+                  fillColor: Color.fromRGBO(255, 255, 255, 0.08),
                   counterStyle: const TextStyle(color: Colors.white38),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -1231,9 +1256,6 @@ class _SellMedicineAndInventoryPageState
     );
   }
 
-  // =========================
-  // SAVE SUSPICIOUS LOG
-  // =========================
   Future<void> _saveSuspiciousLog({
     required String medicineName,
     required String batchNumber,
@@ -1260,9 +1282,6 @@ class _SellMedicineAndInventoryPageState
     }
   }
 
-  // =========================
-  // COMPLETE SALE
-  // =========================
   Future<void> _completeSale({
     required Map<String, dynamic> medicine,
     required String saleType,
@@ -1327,9 +1346,6 @@ class _SellMedicineAndInventoryPageState
     }
   }
 
-  // =========================
-  // RECEIPT
-  // =========================
   void _showReceipt({
     required String medicineName,
     required String batchNumber,
@@ -1457,9 +1473,6 @@ class _SellMedicineAndInventoryPageState
     );
   }
 
-  // =========================
-  // ADD / EDIT MEDICINE BOX
-  // =========================
   void _showMedicineBoxDialog(
     String cartonId,
     String manufacturerName, {
@@ -1490,6 +1503,10 @@ class _SellMedicineAndInventoryPageState
       text: existing?['price_per_strip']?.toString() ?? '',
     );
     final customUnitCtrl = TextEditingController();
+    final shelfNumCtrl = TextEditingController(
+      text: existing?['shelf_number']?.toString() ?? '',
+    );
+    String? selectedShelfSide = existing?['shelf_side']?.toString();
 
     String selectedUnit = existing?['unit'] ?? 'Tablets';
     bool isCustomUnit = !_units.contains(selectedUnit);
@@ -1524,7 +1541,7 @@ class _SellMedicineAndInventoryPageState
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.greenAccent.withValues(alpha: 0.1),
+                    color: Color.fromRGBO(105, 240, 174, 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
@@ -1568,7 +1585,7 @@ class _SellMedicineAndInventoryPageState
                     hintText: 'Expiry Date *',
                     hintStyle: const TextStyle(color: Colors.white38),
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.08),
+                    fillColor: Color.fromRGBO(255, 255, 255, 0.08),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide.none,
@@ -1627,7 +1644,7 @@ class _SellMedicineAndInventoryPageState
                     ),
                     hintText: 'Unit Type',
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.08),
+                    fillColor: Color.fromRGBO(255, 255, 255, 0.08),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide.none,
@@ -1653,6 +1670,78 @@ class _SellMedicineAndInventoryPageState
                   const SizedBox(height: 10),
                   _dialogField(customUnitCtrl, 'Custom Unit', Icons.edit),
                 ],
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Color.fromRGBO(179, 136, 255, 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Color.fromRGBO(179, 136, 255, 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.shelves,
+                            color: Colors.purpleAccent,
+                            size: 14,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'Shelf Location (optional)',
+                            style: TextStyle(
+                              color: Colors.purpleAccent,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      _dialogField(
+                        shelfNumCtrl,
+                        'Shelf Number (e.g. A1, B2)',
+                        Icons.tag,
+                      ),
+                      const SizedBox(height: 10),
+                      DropdownButtonFormField<String>(
+                        value: selectedShelfSide,
+                        dropdownColor: const Color(0xFF1A1A2E),
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(
+                            Icons.align_horizontal_center,
+                            color: Colors.white70,
+                          ),
+                          hintText: 'Shelf Side (optional)',
+                          hintStyle: const TextStyle(color: Colors.white38),
+                          filled: true,
+                          fillColor: Color.fromRGBO(255, 255, 255, 0.08),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        items: _shelfSides
+                            .map(
+                              (s) => DropdownMenuItem(
+                                value: s,
+                                child: Text(
+                                  s,
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) => setDs(() => selectedShelfSide = v),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -1679,6 +1768,7 @@ class _SellMedicineAndInventoryPageState
                 final unit = isCustomUnit
                     ? customUnitCtrl.text.trim()
                     : selectedUnit;
+                final shelfNum = shelfNumCtrl.text.trim();
 
                 if (name.isEmpty || batch.isEmpty || expiry.isEmpty) {
                   _error('Fill all required fields (*)');
@@ -1687,6 +1777,7 @@ class _SellMedicineAndInventoryPageState
 
                 try {
                   if (isEditing) {
+                    // ✅ FIXED: existing!['id'] — safe because isEditing guarantees existing != null
                     await supabase
                         .from('medicine_boxes')
                         .update({
@@ -1701,8 +1792,10 @@ class _SellMedicineAndInventoryPageState
                           'unit': unit,
                           'price': price,
                           'price_per_strip': stripPrice,
+                          'shelf_number': shelfNum.isEmpty ? null : shelfNum,
+                          'shelf_side': selectedShelfSide,
                         })
-                        .eq('id', existing!['id']);
+                        .eq('id', existing['id']); // ✅ FIXED
                     _success('Medicine box updated!');
                   } else {
                     await supabase.from('medicine_boxes').insert({
@@ -1718,6 +1811,8 @@ class _SellMedicineAndInventoryPageState
                       'unit': unit,
                       'price': price,
                       'price_per_strip': stripPrice,
+                      'shelf_number': shelfNum.isEmpty ? null : shelfNum,
+                      'shelf_side': selectedShelfSide,
                       'created_by': supabase.auth.currentUser?.id,
                       'pharmacy_id': PharmacySession.pharmacyId,
                     });
@@ -1740,9 +1835,6 @@ class _SellMedicineAndInventoryPageState
     );
   }
 
-  // =========================
-  // ADD / EDIT MANUFACTURER
-  // =========================
   void _showManufacturerDialog({Map<String, dynamic>? existing}) {
     final nameCtrl = TextEditingController(text: existing?['name'] ?? '');
     final countryCtrl = TextEditingController(text: existing?['country'] ?? '');
@@ -1787,10 +1879,10 @@ class _SellMedicineAndInventoryPageState
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.blueAccent.withValues(alpha: 0.1),
+                    color: Color.fromRGBO(68, 138, 255, 0.1),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: Colors.blueAccent.withValues(alpha: 0.3),
+                      color: Color.fromRGBO(68, 138, 255, 0.3),
                     ),
                   ),
                   child: const Row(
@@ -1832,6 +1924,7 @@ class _SellMedicineAndInventoryPageState
               }
               try {
                 if (isEditing) {
+                  // ✅ FIXED: existing!['id'] — safe because isEditing guarantees existing != null
                   await supabase
                       .from('manufacturers')
                       .update({
@@ -1840,7 +1933,7 @@ class _SellMedicineAndInventoryPageState
                             ? null
                             : countryCtrl.text.trim(),
                       })
-                      .eq('id', existing!['id']);
+                      .eq('id', existing['id']); // ✅ FIXED
                   _success('Manufacturer updated!');
                 } else {
                   final cartonNum = int.tryParse(cartonNumCtrl.text) ?? 1;
@@ -1888,9 +1981,6 @@ class _SellMedicineAndInventoryPageState
     );
   }
 
-  // =========================
-  // VIEW MEDICINE BOXES
-  // =========================
   void _viewMedicineBoxes(
     String manufacturerId,
     String manufacturerName,
@@ -1983,10 +2073,10 @@ class _SellMedicineAndInventoryPageState
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.blueAccent.withValues(alpha: 0.1),
+                          color: Color.fromRGBO(68, 138, 255, 0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.blueAccent.withValues(alpha: 0.3),
+                            color: Color.fromRGBO(68, 138, 255, 0.3),
                           ),
                         ),
                         child: Row(
@@ -2061,13 +2151,17 @@ class _SellMedicineAndInventoryPageState
                             final int qty = (box['quantity'] as int?) ?? 0;
                             final int spb =
                                 (box['strips_per_box'] as int?) ?? 10;
+                            final String shelfNum =
+                                box['shelf_number']?.toString() ?? '';
+                            final String shelfSide =
+                                box['shelf_side']?.toString() ?? '';
 
                             return Card(
                               color: isExpired
-                                  ? Colors.red.withValues(alpha: 0.15)
+                                  ? Color.fromRGBO(244, 67, 54, 0.15)
                                   : isExpiringSoon
-                                  ? Colors.orange.withValues(alpha: 0.15)
-                                  : Colors.white.withValues(alpha: 0.08),
+                                  ? Color.fromRGBO(255, 152, 0, 0.15)
+                                  : Color.fromRGBO(255, 255, 255, 0.08),
                               margin: const EdgeInsets.only(bottom: 10),
                               child: Padding(
                                 padding: const EdgeInsets.all(12),
@@ -2135,8 +2229,11 @@ class _SellMedicineAndInventoryPageState
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.05,
+                                        color: Color.fromRGBO(
+                                          255,
+                                          255,
+                                          255,
+                                          0.05,
                                         ),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
@@ -2169,6 +2266,45 @@ class _SellMedicineAndInventoryPageState
                                         ],
                                       ),
                                     ),
+                                    if (shelfNum.isNotEmpty ||
+                                        shelfSide.isNotEmpty) ...[
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.shelves,
+                                            color: Colors.purpleAccent,
+                                            size: 14,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          if (shelfNum.isNotEmpty)
+                                            Text(
+                                              'Shelf: $shelfNum',
+                                              style: const TextStyle(
+                                                color: Colors.purpleAccent,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          if (shelfNum.isNotEmpty &&
+                                              shelfSide.isNotEmpty)
+                                            const Text(
+                                              ' | ',
+                                              style: TextStyle(
+                                                color: Colors.white38,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          if (shelfSide.isNotEmpty)
+                                            Text(
+                                              'Side: $shelfSide',
+                                              style: const TextStyle(
+                                                color: Colors.cyanAccent,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
                                     const SizedBox(height: 6),
                                     Text(
                                       isExpired
@@ -2203,45 +2339,6 @@ class _SellMedicineAndInventoryPageState
     }
   }
 
-  // =========================
-  // FEFO STATUS
-  // =========================
-  ({String label, Color color, int days}) _fefoStatus(String? expiryStr) {
-    if (expiryStr == null) {
-      return (label: 'Unknown', color: Colors.grey, days: 0);
-    }
-    final expiry = DateTime.tryParse(expiryStr);
-    if (expiry == null) {
-      return (label: 'Unknown', color: Colors.grey, days: 0);
-    }
-    final days = expiry.difference(DateTime.now()).inDays;
-    if (days < 0) {
-      return (label: '⛔ EXPIRED', color: Colors.redAccent, days: days);
-    } else if (days <= 7) {
-      return (label: '🔴 Critical ($days days)', color: Colors.red, days: days);
-    } else if (days <= 30) {
-      return (
-        label: '🟠 Expiring Soon ($days days)',
-        color: Colors.orange,
-        days: days,
-      );
-    } else if (days <= 90) {
-      return (
-        label: '🟡 Use Soon ($days days)',
-        color: Colors.yellow,
-        days: days,
-      );
-    }
-    return (
-      label: '✅ Good ($days days)',
-      color: Colors.greenAccent,
-      days: days,
-    );
-  }
-
-  // =========================
-  // HELPER WIDGETS
-  // =========================
   Widget _infoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
@@ -2282,12 +2379,12 @@ class _SellMedicineAndInventoryPageState
         decoration: BoxDecoration(
           color: isSelected
               ? Colors.blueAccent
-              : Colors.white.withValues(alpha: 0.08),
+              : Color.fromRGBO(255, 255, 255, 0.08),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? Colors.blueAccent
-                : Colors.white.withValues(alpha: 0.2),
+                : Color.fromRGBO(255, 255, 255, 0.2),
           ),
         ),
         child: Text(
@@ -2325,7 +2422,7 @@ class _SellMedicineAndInventoryPageState
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.white38),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.08),
+        fillColor: Color.fromRGBO(255, 255, 255, 0.08),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
@@ -2380,9 +2477,6 @@ class _SellMedicineAndInventoryPageState
     context,
   ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.green));
 
-  // =========================
-  // BUILD
-  // =========================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -2395,12 +2489,11 @@ class _SellMedicineAndInventoryPageState
             ),
           ),
           Positioned.fill(
-            child: Container(color: Colors.black.withValues(alpha: 0.45)),
+            child: Container(color: Color.fromRGBO(0, 0, 0, 0.45)),
           ),
           SafeArea(
             child: Column(
               children: [
-                // TOP BAR
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -2449,12 +2542,10 @@ class _SellMedicineAndInventoryPageState
                     ],
                   ),
                 ),
-
-                // TAB BAR
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: Color.fromRGBO(255, 255, 255, 0.08),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: TabBar(
@@ -2469,21 +2560,17 @@ class _SellMedicineAndInventoryPageState
                     tabs: const [
                       Tab(text: '💊 Sell'),
                       Tab(text: '📦 Inventory'),
-                      Tab(text: '📊 FEFO'),
                       Tab(text: '🔍 Substitute'),
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 10),
-
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
                     children: [
                       _buildSellTab(),
                       _buildInventoryTab(),
-                      _buildFefoTab(),
                       _buildSubstituteTab(),
                     ],
                   ),
@@ -2508,9 +2595,6 @@ class _SellMedicineAndInventoryPageState
     );
   }
 
-  // =========================
-  // TAB 1: SELL
-  // =========================
   Widget _buildSellTab() {
     return Column(
       children: [
@@ -2527,7 +2611,7 @@ class _SellMedicineAndInventoryPageState
                     hintText: 'Search name, generic, batch...',
                     hintStyle: const TextStyle(color: Colors.white38),
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.08),
+                    fillColor: Color.fromRGBO(255, 255, 255, 0.08),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide.none,
@@ -2587,9 +2671,12 @@ class _SellMedicineAndInventoryPageState
                   itemCount: filteredMedicines.length,
                   itemBuilder: (_, i) {
                     final m = filteredMedicines[i];
-                    final status = _fefoStatus(m['expiry_date']?.toString());
-                    final Color statusColor = status.color;
-                    final bool isExpired = status.days < 0;
+                    final bool isExpired = _isExpired(
+                      m['expiry_date']?.toString(),
+                    );
+                    final Color statusColor = _expiryColor(
+                      m['expiry_date']?.toString(),
+                    );
                     final int qty = (m['quantity'] as int?) ?? 0;
                     final int spb = (m['strips_per_box'] as int?) ?? 10;
                     final int cartonNum =
@@ -2599,11 +2686,13 @@ class _SellMedicineAndInventoryPageState
 
                     return Card(
                       color: isExpired
-                          ? Colors.red.withValues(alpha: 0.15)
-                          : Colors.white.withValues(alpha: 0.10),
+                          ? Color.fromRGBO(244, 67, 54, 0.15)
+                          : Color.fromRGBO(255, 255, 255, 0.10),
                       margin: const EdgeInsets.only(bottom: 10),
                       child: InkWell(
-                        onTap: isExpired ? null : () => _showSellDialog(m),
+                        onTap: (isExpired || qty <= 0)
+                            ? null
+                            : () => _showSellDialog(m),
                         borderRadius: BorderRadius.circular(12),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
@@ -2650,16 +2739,22 @@ class _SellMedicineAndInventoryPageState
                                       ],
                                     ),
                                   ),
-                                  isExpired
-                                      ? const Icon(
-                                          Icons.block,
-                                          color: Colors.redAccent,
-                                        )
-                                      : const Icon(
-                                          Icons.arrow_forward_ios,
-                                          color: Colors.white54,
-                                          size: 14,
-                                        ),
+                                  if (isExpired)
+                                    const Icon(
+                                      Icons.block,
+                                      color: Colors.redAccent,
+                                    )
+                                  else if (qty <= 0)
+                                    const Icon(
+                                      Icons.remove_circle_outline,
+                                      color: Colors.grey,
+                                    )
+                                  else
+                                    const Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: Colors.white54,
+                                      size: 14,
+                                    ),
                                 ],
                               ),
                               const SizedBox(height: 8),
@@ -2676,7 +2771,10 @@ class _SellMedicineAndInventoryPageState
                                     '🏭 ${bpc}×$cartonNum=${bpc * cartonNum}',
                                     Colors.orange,
                                   ),
-                                  _badge(status.label, statusColor),
+                                  _badge(
+                                    _expiryLabel(m['expiry_date']?.toString()),
+                                    statusColor,
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 4),
@@ -2687,6 +2785,29 @@ class _SellMedicineAndInventoryPageState
                                   fontSize: 11,
                                 ),
                               ),
+                              if (isExpired)
+                                Container(
+                                  margin: const EdgeInsets.only(top: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Color.fromRGBO(255, 82, 82, 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Color.fromRGBO(255, 82, 82, 0.5),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    '⛔ EXPIRED — Cannot be sold',
+                                    style: TextStyle(
+                                      color: Colors.redAccent,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -2699,31 +2820,24 @@ class _SellMedicineAndInventoryPageState
     );
   }
 
-  // =========================
-  // TAB 2: INVENTORY
-  // =========================
   Widget _buildInventoryTab() {
     return loadingManufacturers
         ? const Center(
             child: CircularProgressIndicator(color: Colors.blueAccent),
           )
         : manufacturers.isEmpty
-        ? Center(
+        ? const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.business_outlined,
-                  color: Colors.white24,
-                  size: 60,
-                ),
-                const SizedBox(height: 12),
-                const Text(
+                Icon(Icons.business_outlined, color: Colors.white24, size: 60),
+                SizedBox(height: 12),
+                Text(
                   'No manufacturers yet',
                   style: TextStyle(color: Colors.white54),
                 ),
-                const SizedBox(height: 8),
-                const Text(
+                SizedBox(height: 8),
+                Text(
                   'Tap the + button below to add one',
                   style: TextStyle(color: Colors.white38, fontSize: 13),
                 ),
@@ -2736,7 +2850,7 @@ class _SellMedicineAndInventoryPageState
             itemBuilder: (_, i) {
               final m = manufacturers[i];
               return Card(
-                color: Colors.white.withValues(alpha: 0.10),
+                color: Color.fromRGBO(255, 255, 255, 0.10),
                 margin: const EdgeInsets.only(bottom: 10),
                 child: ListTile(
                   leading: const CircleAvatar(
@@ -2794,177 +2908,6 @@ class _SellMedicineAndInventoryPageState
           );
   }
 
-  // =========================
-  // TAB 3: FEFO
-  // =========================
-  Widget _buildFefoTab() {
-    final sorted = [...allMedicines];
-    sorted.sort((a, b) {
-      final da =
-          DateTime.tryParse(a['expiry_date']?.toString() ?? '') ??
-          DateTime(2100);
-      final db =
-          DateTime.tryParse(b['expiry_date']?.toString() ?? '') ??
-          DateTime(2100);
-      return da.compareTo(db);
-    });
-
-    return loadingMedicines
-        ? const Center(
-            child: CircularProgressIndicator(color: Colors.greenAccent),
-          )
-        : sorted.isEmpty
-        ? const Center(
-            child: Text(
-              'No medicines in stock',
-              style: TextStyle(color: Colors.white54),
-            ),
-          )
-        : Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.greenAccent.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.greenAccent.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: Colors.greenAccent,
-                        size: 14,
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'FEFO — First Expiry First Out. Dispense from the top of this list first.',
-                          style: TextStyle(color: Colors.white60, fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: sorted.length,
-                  itemBuilder: (_, i) {
-                    final m = sorted[i];
-                    final status = _fefoStatus(m['expiry_date']?.toString());
-                    final Color color = status.color;
-                    final int qty = (m['quantity'] as int?) ?? 0;
-                    final int spb = (m['strips_per_box'] as int?) ?? 10;
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: color.withValues(alpha: 0.35),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: color.withValues(alpha: 0.5),
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${i + 1}',
-                                style: TextStyle(
-                                  color: color,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  m['medicine_name']?.toString() ?? '',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                if ((m['generic_name']?.toString() ?? '')
-                                    .isNotEmpty)
-                                  Text(
-                                    m['generic_name'],
-                                    style: const TextStyle(
-                                      color: Colors.blueAccent,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '📦 $qty boxes  |  💊 ${qty * spb} strips',
-                                  style: const TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: color.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: color.withValues(alpha: 0.4),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    status.label,
-                                    style: TextStyle(
-                                      color: color,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          );
-  }
-
-  // =========================
-  // TAB 4: SUBSTITUTE FINDER
-  // =========================
   Widget _buildSubstituteTab() {
     return StatefulBuilder(
       builder: (ctx, setLocal) => Column(
@@ -2977,10 +2920,10 @@ class _SellMedicineAndInventoryPageState
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.purple.withValues(alpha: 0.1),
+                    color: Color.fromRGBO(156, 39, 176, 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Colors.purple.withValues(alpha: 0.3),
+                      color: Color.fromRGBO(156, 39, 176, 0.3),
                     ),
                   ),
                   child: const Row(
@@ -3035,7 +2978,7 @@ class _SellMedicineAndInventoryPageState
                           hintText: 'Enter generic name (e.g. Atorvastatin)',
                           hintStyle: const TextStyle(color: Colors.white38),
                           filled: true,
-                          fillColor: Colors.white.withValues(alpha: 0.08),
+                          fillColor: Color.fromRGBO(255, 255, 255, 0.08),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
                             borderSide: BorderSide.none,
@@ -3124,8 +3067,11 @@ class _SellMedicineAndInventoryPageState
                     itemBuilder: (_, i) {
                       final m = _substituteResults[i];
                       final int qty = (m['quantity'] as int?) ?? 0;
+                      final bool expired = _isExpired(
+                        m['expiry_date']?.toString(),
+                      );
                       return Card(
-                        color: Colors.white.withValues(alpha: 0.10),
+                        color: Color.fromRGBO(255, 255, 255, 0.10),
                         margin: const EdgeInsets.only(bottom: 10),
                         child: ListTile(
                           leading: const CircleAvatar(
@@ -3167,15 +3113,24 @@ class _SellMedicineAndInventoryPageState
                                   fontSize: 11,
                                 ),
                               ),
+                              if (expired)
+                                const Text(
+                                  '⛔ EXPIRED',
+                                  style: TextStyle(
+                                    color: Colors.redAccent,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                             ],
                           ),
                           trailing: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: qty > 0
+                              backgroundColor: (qty > 0 && !expired)
                                   ? Colors.greenAccent
                                   : Colors.grey,
                             ),
-                            onPressed: qty > 0
+                            onPressed: (qty > 0 && !expired)
                                 ? () => _showSellDialog(m)
                                 : null,
                             child: const Text(
